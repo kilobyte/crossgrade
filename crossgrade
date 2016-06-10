@@ -1,0 +1,97 @@
+#!/usr/bin/perl -w
+use strict;
+#use Data::Dumper;
+use v5.10.1;
+no warnings 'experimental::smartmatch';
+
+# print()/printf() that removes colours when stdout is not a terminal
+sub printc
+{
+    local $_=shift;
+    s/\e\[[0-9;]*m//g unless -t STDOUT;
+    print @_? sprintf($_, @_) : $_;
+}
+
+sub diec
+{
+    local $_=shift;
+    s/\e\[[0-9;]*m//g unless -t STDOUT;
+    die @_? sprintf($_, @_) : $_;
+}
+
+sub run
+{
+    my ($command, $args, $errmsg, $errvar) = @_;
+    $errmsg = "\e[31mE: Failed to exec $command @$args\e[0m\n" unless $errmsg;
+    unless (open(RUN, "-|", $command, @$args))
+    {
+        printc $errmsg;
+        $errvar ? $$errvar=$? : exit 1;
+    };
+    undef local $/;
+    local $_=<RUN>;
+    unless (close RUN)
+    {
+        printc $errmsg;
+        $errvar ? $$errvar=$? : exit 1;
+    };
+    return $_;
+}
+
+$#ARGV==0
+    or diec "Usage: crossgrade <arch>\n";
+my $target_arch = $ARGV[0];
+$target_arch=~/^[a-z][a-z0-9-]*[a-z0-9]$/
+    or diec "\e[31mE: Not a valid architecture '\e[0;1m$target_arch\e[0;31m'.\e[0m\n";
+
+if (-x "/usr/bin/arch-test")
+{
+    for (system("/usr/bin/arch-test $target_arch >/dev/null"))
+    {
+        when (0)
+        {
+            printc "\e[32mI: Your machine+kernel can run \e[0;1m$target_arch\e[0;32m"
+                   .".  Great!\e[0m\n";
+        }
+        when (2<<8)
+        {
+            printc "\e[33mW: Can't check whether your machine+kernel can run "
+                   ."\e[0;1m$target_arch\e[0;33m.  Proceeding anyway...\e[0m\n";
+        }
+        default
+        {
+            diec "\e[31mE: Your machine+kernel cannot run "
+                 ."\e[0;1m$target_arch\e[0;31m!\e[0m\n".
+            ($target_arch eq "x32"?"Please add syscall.x32=y to your kernel's "
+                 ."cmdline (Debian kernels) or\nset CONFIG_X86_X32=y (vanilla "
+                 ."kernels), then reboot.\n":
+             $target_arch eq "amd64"?"Please install an -amd64 flavour kernel,"
+                 ." then reboot.\n":"");
+        }
+    }
+}
+else
+{
+    printc "\e[33mW: \e[0;1march-test\e[0;33m not installed, can't verify if"
+           ." your kernel can run \e[0;1m$target_arch\e[0;33m.\n";
+}
+
+my $dpkg_arch=run("dpkg", ["--print-architecture"]);
+chomp $dpkg_arch;
+my @cur_archs=split(/\n/, run("dpkg", ["--print-foreign-architectures"]));
+printc("\e[30;1mI: Current architecture[s]: %s %s\e[0m\n", $dpkg_arch,
+       join(" ", @cur_archs));
+
+sub fetch_dpkg
+{
+    printc "\e[30;1mI: Fetching dpkg data.\e[0m\n";
+    local $_=run("dpkg", ["-l"]);
+    s/^Desired.*======\n//s
+        or diec "\e[31mE: \e[0;1mdpkg -l\e[0;31m output lacks header.\e[0m\n";
+    for (split /\n/)
+    {
+        print;
+    }
+}
+
+fetch_dpkg;
