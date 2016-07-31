@@ -109,3 +109,46 @@ sub fetch_dpkg
 }
 
 fetch_dpkg;
+
+my (%apt_pkg_ver, %depends);
+
+sub fetch_apt
+{
+    printc "\e[30;1mI: Fetching apt data.\e[0m\n";
+    local $_=run("apt-cache", ["dumpavail"]);
+    undef %apt_pkg_ver;
+    undef %depends;
+    for (split /\n\n/)
+    {
+        my %f;
+        $f{$1}=$2 while (/\G^([!-9;-~]+):[ \t]*((?:[^\n]|\n[ \t]+)+)\n?/gsm);
+        my $entry=$_;
+        for (qw(Package Version Architecture))
+        {
+            defined $f{$_} or diec "\e[31mE: Missing \e[0;1m$_\e[0;31m in "
+                ."available in:\e[0m$entry\n";
+        }
+        my ($pkg,$ver,$arch,$deps,$predeps)=($f{"Package"}, $f{"Version"},
+            $f{"Architecture"}, $f{"Depends"}//'', $f{'Pre-Depends'});
+        $apt_pkg_ver{"$pkg:$arch"}=[] if !exists $apt_pkg_ver{"$pkg:$arch"};
+        push @{$apt_pkg_ver{"$pkg:$arch"}}, $ver;
+
+        if (defined $predeps)
+        {
+            $deps.=', ' if $deps ne '';
+            $deps.=$predeps;
+        }
+        $depends{"$pkg:$arch|$ver"}=$deps;
+    }
+}
+
+fetch_apt;
+
+if (defined $apt_pkg_ver{"bash:$target_arch"})
+{
+    printc "\e[32mI: Apt has at least some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
+}
+else
+{
+    printc "\e[30;1mI: Apt has no \e[0;1m$target_arch\e[30;1m packages yet.\e[0m\n";
+}
