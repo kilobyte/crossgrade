@@ -44,11 +44,21 @@ sub need_root()
     diec "\e[31mE: Need root to continue.\e[0m\n";
 }
 
+sub apt_check()
+{
+    printc "\e[30;1mI: Checking apt consistency.\e[0m\n";
+    run("apt-get", $>?['check','-s']:['check'],
+        "\e[31mE: Please fix apt breakages first.\e[0m\n"
+        ."'apt-get -f install' and 'dpkg --configure -a' might be helpful.\n");
+}
+
 $#ARGV==0
     or diec "Usage: crossgrade <arch>\n";
 my $target_arch = $ARGV[0];
 $target_arch=~/^[a-z][a-z0-9-]*[a-z0-9]$/
     or diec "\e[31mE: Not a valid architecture '\e[0;1m$target_arch\e[0;31m'.\e[0m\n";
+
+apt_check;
 
 if (-x "/usr/bin/arch-test")
 {
@@ -172,4 +182,5 @@ Please edit \e[0;1m/etc/apt/sources.list\e[0m and add a repository containing su
 binaries.
 END
     printc "\e[32mI: That went ok, got some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
+    apt_check;
 }
