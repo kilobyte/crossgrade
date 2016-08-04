@@ -38,6 +38,12 @@ sub run
     return $_;
 }
 
+sub need_root()
+{
+    return unless $>;
+    diec "\e[31mE: Need root to continue.\e[0m\n";
+}
+
 $#ARGV==0
     or diec "Usage: crossgrade <arch>\n";
 my $target_arch = $ARGV[0];
@@ -151,4 +157,19 @@ if (defined $apt_pkg_ver{"bash:$target_arch"})
 else
 {
     printc "\e[30;1mI: Apt has no \e[0;1m$target_arch\e[30;1m packages yet.\e[0m\n";
+
+    need_root;
+    printc "\e[34;1mA: Adding \e[0;1m$target_arch\e[0;34;1m to dpkg.\e[0m\n";
+    run("dpkg", ["--add-architecture", $target_arch]);
+    printc "\e[34;1mA: Calling apt-get update.\e[0m\n";
+    my $err;
+    run("apt-get", ["update"], "\e[33mW: apt-get update returned error, let's "
+        ."check if we can continue...\e[0m\n", \$err);
+    fetch_apt;
+    defined $apt_pkg_ver{"bash:$target_arch"} or diec <<END;
+\e[31mE: No \e[0;1m$target_arch\e[30;1m packages in configured sources.
+Please edit \e[0;1m/etc/apt/sources.list\e[0m and add a repository containing such
+binaries.
+END
+    printc "\e[32mI: That went ok, got some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
 }
