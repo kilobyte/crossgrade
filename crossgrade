@@ -4,6 +4,9 @@ use strict;
 use v5.10.1;
 no warnings 'experimental::smartmatch';
 
+close STDIN;
+open STDIN, '<', '/dev/null' or die "Can't open /dev/null: $?\n";
+
 # print()/printf() that removes colours when stdout is not a terminal
 sub printc
 {
