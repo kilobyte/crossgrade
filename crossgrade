@@ -94,7 +94,7 @@ if (-x "/usr/bin/arch-test")
     {
         when (0)
         {
-            printc "\e[32mI: Your machine+kernel can run \e[0;1m$target_arch\e[0;32m"
+            printc "\e[32mG: Your machine+kernel can run \e[0;1m$target_arch\e[0;32m"
                    .".  Great!\e[0m\n";
         }
         when (2<<8)
@@ -197,7 +197,7 @@ fetch_apt;
 
 if (exists $apt_pkg_ver{"bash:$target_arch"})
 {
-    printc "\e[32mI: Apt has at least some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
+    printc "\e[32mG: Apt has at least some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
 }
 else
 {
@@ -216,7 +216,7 @@ else
 Please edit \e[0;1m/etc/apt/sources.list\e[0m and add a repository containing such
 binaries.
 END
-    printc "\e[32mI: That went ok, got some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
+    printc "\e[32mG: That went ok, got some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
     apt_check;
 }
 
@@ -309,7 +309,7 @@ sub crossgrade_essential_libs()
     my @elibs=grep {is_ma_same $_} sort keys %essential;
     @elibs=grep {!exists $cur_pkg_ver{"$_:$target_arch"}} @elibs;
 
-    return printc "\e[32mI: All essential libraries are already done.\e[0m\n"
+    return printc "\e[32mG: All essential libraries are already done.\e[0m\n"
         unless @elibs;
 
     printc "\e[34;1mA: Installing essential libraries.\e[0m\n";
