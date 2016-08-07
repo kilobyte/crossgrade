@@ -41,6 +41,31 @@ sub run
     return $_;
 }
 
+sub run_tee
+{
+    my ($command, $args, $errmsg, $errvar) = @_;
+    $errmsg = "\e[31mE: Failed to exec $command @$args\e[0m\n" unless $errmsg;
+    unless (open(RUN, "-|", $command, @$args))
+    {
+        printc $errmsg;
+        $errvar ? $$errvar=$? : exit 1;
+    };
+    local $|=1;
+    local $_="";
+    my ($buf,$len);
+    while ($len=sysread(RUN, $buf, 1024))
+    {
+        print $buf;
+        $_.=$buf;
+    }
+    unless (close RUN && defined $len)
+    {
+        printc $errmsg;
+        $errvar ? $$errvar=$? : exit 1;
+    };
+    return $_;
+}
+
 sub need_root()
 {
     return unless $>;
@@ -184,8 +209,8 @@ else
     run("dpkg", ["--add-architecture", $target_arch]);
     printc "\e[34;1mA: Calling apt-get update.\e[0m\n";
     my $err;
-    run("apt-get", ["update"], "\e[33mW: apt-get update returned error, let's "
-        ."check if we can continue...\e[0m\n", \$err);
+    run_tee("apt-get", ["update"], "\e[33mW: apt-get update returned error, "
+        ."let's check if we can continue...\e[0m\n", \$err);
     fetch_apt;
     exists $apt_pkg_ver{"bash:$target_arch"} or diec <<END;
 \e[31mE: No \e[0;1m$target_arch\e[30;1m packages in configured sources.
