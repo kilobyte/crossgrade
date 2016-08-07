@@ -294,17 +294,16 @@ sub is_ma_same
     return $coinst{"$pkg=".get_pkg_ver($pkg)};
 }
 
-sub ec($)
 {
-    my $pkg=$_[0];
-    return "\e[32;1m" if is_arch_all $pkg;
-    return "\e[36;1m" if $coinst{"$pkg=".get_pkg_ver($pkg)};
-    return "\e[34;1m";
-}
+    my (@all,@same,@other);
+    push(@{is_arch_all($_)?\@all:is_ma_same($_)?\@same:\@other}, $_)
+        for sort keys %essential;
 
-print "Essential set:";
-print ec($_)." $_\e[21m=$essential{$_}\e[m" for sort keys %essential;
-print "\n";
+    printc "\e[1mEssential set:\e[0m\n";
+    printc "\e[1mArch-indep:\e[0m ".join(" ",@all)."\n";
+    printc "\e[1mLibraries:\e[0m ".join(" ",@same)."\n";
+    printc "\e[1mRegular packages:\e[0m ".join(" ",@other)."\n";
+}
 
 sub crossgrade_essential_libs()
 {
