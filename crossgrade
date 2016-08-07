@@ -123,8 +123,7 @@ else
 my $dpkg_arch=run("dpkg", ["--print-architecture"]);
 chomp $dpkg_arch;
 my @cur_archs=split(/\n/, run("dpkg", ["--print-foreign-architectures"]));
-printc("\e[30;1mI: Current architecture[s]: %s\e[0m\n", join(" ", $dpkg_arch,
-    @cur_archs));
+printc("Current architecture[s]: %s\n", join(" ", $dpkg_arch, @cur_archs));
 
 my %cur_pkg_ver;
 
