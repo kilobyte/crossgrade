@@ -127,7 +127,7 @@ sub fetch_dpkg
 
 fetch_dpkg;
 
-my (%apt_pkg_ver, %depends, %essential);
+my (%apt_pkg_ver, %depends, %essential, %coinst);
 
 sub fetch_apt
 {
@@ -146,9 +146,10 @@ sub fetch_apt
             exists $f{$_} or diec "\e[31mE: Missing \e[0;1m$_\e[0;31m in "
                 ."available in:\e[0m$entry\n";
         }
-        my ($pkg,$ver,$arch,$deps,$predeps,$ess)=($f{"Package"}, $f{"Version"},
-            $f{"Architecture"}, $f{"Depends"}//'', $f{'Pre-Depends'},
-            $f{"Essential"});
+        my ($pkg,$ver,$arch,$deps,$predeps,$ess,$ma)=
+            ($f{"Package"}, $f{"Version"}, $f{"Architecture"},
+            $f{"Depends"}//'', $f{'Pre-Depends'},
+            $f{"Essential"}, $f{"Multi-Arch"}//'no');
         $apt_pkg_ver{"$pkg:$arch"}=[] if !exists $apt_pkg_ver{"$pkg:$arch"};
         push @{$apt_pkg_ver{"$pkg:$arch"}}, $ver;
 
@@ -161,6 +162,7 @@ sub fetch_apt
         # In apt, being Essential in any configured distribution means you're
         # essential even if not default.
         $essential{$pkg}=1 if defined $ess;
+        $coinst{"$pkg=$ver"}=($ma eq 'same');
     }
 }
 
@@ -248,6 +250,23 @@ sub calc_essential
 
 calc_essential;
 
+# is_arch_all(pkg, ver): check apt
+# is_arch_all(pkg): check dpkg (only if installed)
+sub is_arch_all
+{
+    my ($pkg,$ver)=@_;
+    return exists $depends{"$pkg:all=$ver"} if defined $ver;
+    return exists $cur_pkg_ver{"$pkg:all"};
+}
+
+sub ec($)
+{
+    my $pkg=$_[0];
+    return "\e[32;1m" if is_arch_all $pkg;
+    return "\e[36;1m" if $coinst{"$pkg=".get_pkg_ver($pkg)};
+    return "\e[34;1m";
+}
+
 print "Essential set:";
-print " $_=$essential{$_}" for sort keys %essential;
+print ec($_)." $_\e[21m=$essential{$_}\e[m" for sort keys %essential;
 print "\n";
