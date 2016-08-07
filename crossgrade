@@ -157,7 +157,7 @@ sub fetch_apt
             $deps.=', ' if $deps ne '';
             $deps.=$predeps;
         }
-        $depends{"$pkg:$arch|$ver"}=$deps;
+        $depends{"$pkg:$arch=$ver"}=$deps;
         # In apt, being Essential in any configured distribution means you're
         # essential even if not default.
         $essential{$pkg}=1 if defined $ess;
@@ -218,7 +218,7 @@ sub calc_essential
         }
         $essential{$pkg}=$ver;
 
-        my $deps=$depends{"$pkg:all|$ver"}//$depends{"$pkg:$target_arch|$ver"};
+        my $deps=$depends{"$pkg:all=$ver"}//$depends{"$pkg:$target_arch=$ver"};
         unless (defined $deps)
         {
             printc "\e[33mW: Essential package \e[0;1m$pkg\e[0;33m has no "
