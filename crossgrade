@@ -143,7 +143,7 @@ sub fetch_apt
         my $entry=$_;
         for (qw(Package Version Architecture))
         {
-            defined $f{$_} or diec "\e[31mE: Missing \e[0;1m$_\e[0;31m in "
+            exists $f{$_} or diec "\e[31mE: Missing \e[0;1m$_\e[0;31m in "
                 ."available in:\e[0m$entry\n";
         }
         my ($pkg,$ver,$arch,$deps,$predeps,$ess)=($f{"Package"}, $f{"Version"},
@@ -166,7 +166,7 @@ sub fetch_apt
 
 fetch_apt;
 
-if (defined $apt_pkg_ver{"bash:$target_arch"})
+if (exists $apt_pkg_ver{"bash:$target_arch"})
 {
     printc "\e[32mI: Apt has at least some \e[0;1m$target_arch\e[0;32m packages.\e[0m\n";
 }
@@ -182,7 +182,7 @@ else
     run("apt-get", ["update"], "\e[33mW: apt-get update returned error, let's "
         ."check if we can continue...\e[0m\n", \$err);
     fetch_apt;
-    defined $apt_pkg_ver{"bash:$target_arch"} or diec <<END;
+    exists $apt_pkg_ver{"bash:$target_arch"} or diec <<END;
 \e[31mE: No \e[0;1m$target_arch\e[30;1m packages in configured sources.
 Please edit \e[0;1m/etc/apt/sources.list\e[0m and add a repository containing such
 binaries.
@@ -238,7 +238,7 @@ sub calc_essential
                 ."ignoring \e[0;1m|$2\e[0;33m after \e[0;1m$1\e[0;33m.\e[0m\n"
                 if s/([^|]+?)\s+\|(.*)/$1/; #++
             s/\s*\([<=>]+\s[0-9a-zA-Z:.~+-]+\)//; #TODO: implement versions
-            add_essential($_) unless defined $essential{$_};
+            add_essential($_) unless exists $essential{$_};
         }
     }
 
