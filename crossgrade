@@ -287,6 +287,13 @@ sub is_arch_all
     return exists $cur_pkg_ver{"$pkg:all"};
 }
 
+sub is_ma_same
+{
+    my $pkg=$_[0];
+    return 0 if is_arch_all $_;
+    return $coinst{"$pkg=".get_pkg_ver($pkg)};
+}
+
 sub ec($)
 {
     my $pkg=$_[0];
@@ -298,3 +305,18 @@ sub ec($)
 print "Essential set:";
 print ec($_)." $_\e[21m=$essential{$_}\e[m" for sort keys %essential;
 print "\n";
+
+sub crossgrade_essential_libs()
+{
+    my @elibs=grep {is_ma_same $_} sort keys %essential;
+    @elibs=grep {!exists $cur_pkg_ver{"$_:$target_arch"}} @elibs;
+
+    return printc "\e[32mI: All essential libraries are already done.\e[0m\n"
+        unless @elibs;
+
+    printc "\e[34;1mA: Installing essential libraries.\e[0m\n";
+    run_tee("apt-get", ["install", "-y", "--no-install-recommends",
+        map( ("$_:$target_arch=".get_pkg_ver($_)), @elibs)]);
+}
+
+crossgrade_essential_libs;
