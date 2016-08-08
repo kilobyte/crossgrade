@@ -259,6 +259,7 @@ sub calc_essential
 
         for (split /\s*,\s*/, $deps)
         {
+            next if /^gpgv/; # MA:foreign dependency of apt
             s/\s*\| install-info$//; #moot since pre-squeeze
             s/\s*\| debconf-2\.0$//;
             s/\s*\| cdebconf$//;
@@ -272,6 +273,7 @@ sub calc_essential
     }
 
     printc "\e[30;1mI: Calculating essential set.\e[0m\n";
+    $essential{"apt"}=1; # apt is essential for our purposes.
     add_essential $_ for sort keys %essential;
 }
 
