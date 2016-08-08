@@ -311,7 +311,7 @@ sub crossgrade_essential_libs()
     my @elibs=grep {is_ma_same $_} sort keys %essential;
     @elibs=grep {!exists $cur_pkg_ver{"$_:$target_arch"}} @elibs;
 
-    return printc "\e[32mG: All essential libraries are already done.\e[0m\n"
+    return printc "\e[32mG: All essential libraries are already present.\e[0m\n"
         unless @elibs;
 
     printc "\e[34;1mA: Installing essential libraries.\e[0m\n";
@@ -320,3 +320,59 @@ sub crossgrade_essential_libs()
 }
 
 crossgrade_essential_libs;
+
+sub get_filename($) #never arch:all
+{
+    my $pkg=$_[0];
+    my $ver=get_pkg_ver $pkg or diec "\e[31mE: BUG: Couldn't get version for "
+        ."$pkg\e[0m\n";
+    $ver=~s/:/%3a/g;
+    return "${pkg}_${ver}_${target_arch}.deb";
+}
+
+sub chdir_or_die($)
+{
+    local $_=$_[0];
+    chdir($_) or diec "\e[31mE: chdir $_ failed: $!\e[0m\n";
+}
+
+sub list_dir($)
+{
+    local $_=$_[0];
+    opendir(DIR, $_) or die "\e[31mE: Can't read dir $_: $!\e[0m\n";
+    my @ls=readdir DIR;
+    closedir DIR;
+    return @ls;
+}
+
+sub crossgrade_essential_bin()
+{
+    my @ebin=grep {!is_arch_all($_) && !is_ma_same($_) && !exists
+        $cur_pkg_ver{"$_:$target_arch"}} sort keys %essential;
+
+    return printc "\e[32mG: All essential packages are already replaced.\e[0m\n"
+        unless @ebin;
+
+    chdir_or_die("/var/cache/apt/archives/");
+    my @cached=list_dir("/var/cache/apt/archives/");
+    my @wanted=grep {!(get_filename($_)~~@cached)} @ebin;
+    if (@wanted)
+    {
+        chdir_or_die("/var/cache/apt/archives/partial/");
+        printc "\e[34;1mA: Downloading essential packages.\e[0m\n";
+        run_tee("apt-get", ["download", map( ("$_:$target_arch=".get_pkg_ver($_)),
+            @wanted)]);
+        run("mv", [get_filename $_, ".."]) for @wanted;
+        chdir_or_die("/var/cache/apt/archives/");
+    }
+
+    printc "\e[34;1mA: Replacing essential packages.\e[0m\n";
+    if ("dash"~~@ebin) # dash needs to be done first
+    {
+        run_tee("dpkg", ["-i", map(get_filename($_), ("dash"))]);
+        @ebin=grep(($_ ne "dash"), @ebin);
+    }
+    run_tee("dpkg", ["-i", map(get_filename($_), @ebin)]);
+}
+
+crossgrade_essential_bin;
