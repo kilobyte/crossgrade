@@ -75,7 +75,7 @@ sub need_root()
 sub apt_check()
 {
     printc "\e[30;1mI: Checking apt consistency.\e[0m\n";
-    run("apt-get", $>?['check','-s']:['check'],
+    run_tee("apt-get", $>?['check','-s']:['check'],
         "\e[31mE: Please fix apt breakages first.\e[0m\n"
         ."'apt-get -f install' and 'dpkg --configure -a' might be helpful.\n");
 }
