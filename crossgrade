@@ -86,7 +86,7 @@ my $target_arch = $ARGV[0];
 $target_arch=~/^[a-z][a-z0-9-]*[a-z0-9]$/
     or diec "\e[31mE: Not a valid architecture '\e[0;1m$target_arch\e[0;31m'.\e[0m\n";
 
-apt_check;
+#apt_check;
 
 if (-x "/usr/bin/arch-test")
 {
