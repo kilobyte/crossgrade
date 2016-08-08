@@ -139,6 +139,7 @@ sub fetch_dpkg
         /^[uihrp]([ncHUFWti])([ R]) ([^ ]+) +([a-zA-Z0-9.+:~-]+) +([a-z][a-z0-9-]*[a-z0-9]) +/
             or diec "\e[31mE: Can't parse dpkg -l line:\e[0m\n$_\n";
         my ($state, $err, $pkg, $ver, $arch)=($1,$2,$3,$4,$5);
+        $pkg=~s/:$arch$//;
         $err eq ' '
             or diec "\e[31mE: Package \e[0;1m$pkg\e[0m:\e[1m$arch\e[0;31m is "
                 ."in error state, please reinstall it!\e[0m\n";
@@ -147,7 +148,6 @@ sub fetch_dpkg
                 ."in partially installed state \e[0;1m$state\e[0;31m, please "
                 ."fix or remove it!\e[0m\n";
         next if $state=~/^[nc]$/;
-        $pkg=~s/:$arch//;
         $cur_pkg_ver{"$pkg:$arch"}=$ver;
     }
 }
