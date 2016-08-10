@@ -129,6 +129,7 @@ my @cur_archs=split(/\n/, run("dpkg", ["--print-foreign-architectures"]));
 printc("Current architecture[s]: %s\n", join(" ", $dpkg_arch, @cur_archs));
 
 my %cur_pkg_ver;
+my %unconfigured;
 
 sub fetch_dpkg
 {
@@ -137,6 +138,7 @@ sub fetch_dpkg
     s/^Desired.*======\n//s
         or diec "\e[31mE: \e[0;1mdpkg -l\e[0;31m output lacks header.\e[0m\n";
     undef %cur_pkg_ver;
+    undef %unconfigured;
     for (split /\n/)
     {
         /^[uihrp]([ncHUFWti])([ R]) ([^ ]+) +([a-zA-Z0-9.+:~-]+) +([a-z][a-z0-9-]*[a-z0-9]) +/
@@ -146,10 +148,7 @@ sub fetch_dpkg
         $err eq ' '
             or diec "\e[31mE: Package \e[0;1m$pkg\e[0m:\e[1m$arch\e[0;31m is "
                 ."in error state, please reinstall it!\e[0m\n";
-        $state=~/^[a-z]$/
-            or diec "\e[31mE: Package \e[0;1m$pkg\e[0m:\e[1m$arch\e[0;31m is "
-                ."in partially installed state \e[0;1m$state\e[0;31m, please "
-                ."fix or remove it!\e[0m\n";
+        $unconfigured{"$pkg:$arch"}=1 if $state=~/^[HUFW]$/;
         next if $state=~/^[nc]$/;
         $cur_pkg_ver{"$pkg:$arch"}=$ver;
     }
@@ -207,6 +206,11 @@ else
     printc "\e[30;1mI: Apt has no \e[0;1m$target_arch\e[30;1m packages yet.\e[0m\n";
 
     need_root;
+    if (%unconfigured)
+    {
+        printc "\e[34;1mA: Fixing pending packages before we start.\e[0m\n";
+        run_tee("dpkg", ["--configure", "-a"]);
+    }
     printc "\e[34;1mA: Adding \e[0;1m$target_arch\e[0;34;1m to dpkg.\e[0m\n";
     run("dpkg", ["--add-architecture", $target_arch]);
     printc "\e[34;1mA: Calling apt-get update.\e[0m\n";
