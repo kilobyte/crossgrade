@@ -96,6 +96,9 @@ if (-x "/usr/bin/arch-test")
         {
             printc "\e[32mG: Your machine+kernel can run \e[0;1m$target_arch\e[0;32m"
                    .".  Great!\e[0m\n";
+            printc "\e[33mW: ... but it needs qemu-user to run, be careful "
+                   ."with initramfs rebuilds.\e[0m\n"
+                if (system("QEMU_VERSION=y /usr/bin/arch-test $target_arch >/dev/null"));
         }
         when (2<<8)
         {
